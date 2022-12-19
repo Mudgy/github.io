@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title> Instructions </title>
+    <script src="https://simplycodingcourses.com/files/simplyjs/simply.js"></script>
+    <script>
+      function start(){
+        sjs.open();
+
+        var score = new sjs.Image("Images/score.gif");
+        score.center().offset(100, -50);
+        var score_txt = new sjs.Text("Collect this to increase score", 15, "white");
+        score_txt.center().offset(120, 20);
+
+        var enemy = new sjs.Image("Images/r_enemy.gif");
+        enemy.center().offset(-200, -80);
+        var enemy_txt = new sjs.Text("Avoid this", 25, "white");
+        enemy_txt.center().offset(-165, 25);
+
+        var powerup = new sjs.Image("Images/power_up.png");
+        powerup.center().offset(0, 75);
+        var powerup_txt = new sjs.Text("Collect this to shoot lasers!", 15, "white");
+        powerup_txt.center().offset(0, 130);
+
+        var title = new sjs.Text("Objects!", 50, "blue");
+        title.centerH().offset(0, 10);
+
+        var btn = new sjs.Button("Back", function(){
+          window.location = "index.html";
+        });
+
+      }
+    </script>
+  </head>
+  <body onload="start()">
+    <h1> Instructions </h1>
+
+    <div id="target" style="margin:auto;background:black;"></div>
+  </body>
+</html>

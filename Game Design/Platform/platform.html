@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title> Platform Game </title>
+    <script src="https://simplycodingcourses.com/files/simplyjs/simply.js"></script>
+    <script>
+      var level =[];
+      function start(){
+        sjs.open("target",800,500);
+
+        //bg music
+        var song = new Audio("Music/ova.mp3")
+        musicOn = false;
+        toggle = true;
+        sjs.keyDown(SPACE_KEY, function(){
+          if(toggle == true){
+            if(musicOn == false){
+              musicOn = true;
+              song.play();
+            } else {
+              song.pause();
+              musicOn = false;
+            };
+            toggle = false;
+            setTimeout(function(){
+              toggle = true;
+            },1000);
+          };
+        });
+
+        var bg = new sjs.Image("Images/background.png");
+        bg.setSize(2500, 500);
+
+        var testBtn = new sjs.Button("Test", function(){
+          localStorage.setItem('level', sjs.saveImageArray(level));
+          window.open('test.html', '_blank');
+        });
+        
+        var showBtn = new sjs.Button("Show", function(){
+          var output = document.querySelector("#output");
+          output.innerHTML = sjs.saveImageArray(level);
+        });
+        showBtn.offset(50, 0);
+
+        //player properties
+        var player = new sjs.Image("Images/r_idle.png")
+        player.type = "player"
+        player.setSize(85,93);
+        player.setGravity(3);
+        player.centerH().bottom();
+        player.friction = .3;
+        player.noBounds = true;
+        sjs.scrollable(player, bg);
+
+        //player controls
+        var r_ani = ["Images/r_walk-0.png","Images/r_walk-1.png","Images/r_walk-2.png","Images/r_walk-3.png","Images/r_walk-4.png","Images/r_walk-5.png","Images/r_walk-6.png","Images/r_walk-7.png"];
+        var l_ani = ["Images/l_walk-0.png","Images/l_walk-1.png","Images/l_walk-2.png","Images/l_walk-3.png","Images/l_walk-4.png","Images/l_walk-5.png","Images/l_walk-6.png","Images/l_walk-7.png"];
+        var r_facing = true;
+        var r_track = 0;
+        var l_track = 0;
+
+        sjs.keyDown(RIGHT_KEY, function(){
+          r_facing = true;
+          r_track = r_track + 1;
+          player.pushRight(3);
+          player.setImage(r_ani[r_track]);
+          if(r_track == 7){
+            r_track = 0;
+          };
+          if(r_track >= 8){
+            player.setImage("Images/r_jump.png");
+          };
+        });
+
+        sjs.keyDown(LEFT_KEY, function(){
+          r_facing = false;
+          l_track = l_track + 1;
+          player.pushLeft(3);
+          player.setImage(l_ani[l_track]);
+          if(l_track == 7){
+            l_track = 0;
+          };
+          if(l_track >= 8){
+              player.setImage("Images/l_jump.png");
+          };
+        });
+
+        //jumping properties
+        var canJump = true;
+
+        sjs.keyDown(UP_KEY, function(){
+          if(canJump == true){
+            canJump = false;
+            player.pushUp(60);
+            if(r_facing == true){
+              player.setImage("Images/r_jump.png");
+              r_track = 8;
+            } else{
+              player.setImage("Images/l_jump.png");
+              l_track = 8;
+            };
+          };
+        });
+
+        window.addEventListener("keyup", function(e){
+          if(e.keyCode == RIGHT_KEY){
+            player.setImage("Images/r_idle.png");
+            r_track = 0;
+          } else if(e.keyCode == LEFT_KEY){
+            player.setImage("Images/l_idle.png");
+            l_track = 0;
+          };
+        });
+
+        //onHit functions
+
+        sjs.onHit("player","platform", function(x,y){
+          sjs.stoppedBy(x,y);
+          if(canJump == false && x.y < y.y-85){
+            canJump = true;
+            r_track = 0;
+            l_track = 0;
+          };
+        });
+
+        sjs.onHit("player","bottom_screen", function(x,y){
+          sjs.stoppedBy(x,y);
+          if(canJump == false){
+            canJump = true;
+            r_track = 0;
+            l_track = 0;
+          };
+        });
+
+        sjs.onHit("player",["left_screen","right_screen","top_screen"], function(x,y){
+           sjs.stoppedBy(x,y);
+        });
+
+        sjs.onHit("enemy","bottom_screen", function(x,y){
+          sjs.stoppedBy(x,y);
+        });
+
+        sjs.onHit("enemy",["left_screen","right_screen"], function(x,y){
+          sjs.bounceOff(x,y);
+        });
+
+        sjs.onHit("enemy","platform", function(x,y){
+          if(x.isAboveOf(y) == true){
+            sjs.stoppedBy(x,y);
+          } else {
+            sjs.bounceOff(x,y);
+          };
+        });
+
+        sjs.onHit("player","jumpPad", function(x,y){
+          if(x.isAboveOf(y) == true){
+            x.pushUp(50);
+          } else {
+            sjs.stoppedBy(x,y);
+          };
+        });
+
+        var trash = new sjs.Text("Trash", 30, "green");
+        trash.setHeight(60);
+        trash.node.background = "green";
+        trash.node.borderTop = "4px solid yellow";
+        trash.type = "trash";
+        trash.moveTo(720,10);
+        trash.fixed = true;
+
+        sjs.onHit("trash",["jumpPad","enemy","flag","powerup","score","platform"], function(x,y){
+          y.destroy();
+          sjs.removeFromArray(level,y);
+        });
+
+      } //end start
+
+      //platform
+        function platform(){
+          var platform = new sjs.Image("Images/platform.png");
+          level.push(platform);
+          platform.type = "platform";
+          platform.setHeight(30);
+          platform.center().offset(-sjs.gx,10);
+          platform.onMouseDown(function(){
+            platform.draggable();
+            platform.follow(sjs.mouse);
+          });
+        } //end platform
+
+        //powerup
+        function powerup(){
+          var powerup = new sjs.Image("Images/power_up.png");
+          level.push(powerup);
+          powerup.type = "powerup";
+          powerup.setHeight(30);
+          powerup.center().offset(-sjs.gx,10);
+          powerup.onMouseDown(function(){
+            powerup.draggable();
+            powerup.follow(sjs.mouse);
+          });
+        } //end powerup
+
+        //score
+        function score(){
+          var score = new sjs.Image("Images/score.gif");
+          level.push(score);
+          score.type = "score";
+          score.center().offset(-sjs.gx,10);
+          score.setHeight(30);
+          score.onMouseDown(function(){
+            score.draggable();
+            score.follow(sjs.mouse);
+          });
+        } //end score
+
+        //flag
+        function flag(){
+          var flag = new sjs.Image("Images/flag_bad.png");
+          level.push(flag);
+          flag.type = "flag";
+          flag.center().offset(-sjs.gx,10);
+          flag.setHeight(80);
+          flag.onMouseDown(function(){
+            flag.draggable();
+            flag.follow(sjs.mouse);
+          });
+        } //end flag
+
+        //enemy
+        function enemy(){
+          var enemy = new sjs.Image("Images/r_enemy.gif");
+          level.push(enemy);
+          enemy.type = "enemy";
+          enemy.center().offset(-sjs.gx,10);
+          enemy.friction = 0;
+          enemy.noBounds = true;
+          enemy.setHFlipImages("Images/l_enemy.gif","Images/r_enemy.gif");
+          enemy.onMouseDown(function(){
+            enemy.removeGravity();
+            enemy.stop();
+            enemy.follow(sjs.mouse);
+          });
+          enemy.onMouseUp(function(){
+            enemy.unfollow(sjs.mouse);
+            enemy.setGravity();
+            enemy.pushHFacing();
+            enemy.accel=.5;
+          })
+        } //end enemy
+
+        //jumpPad
+        function jumpPad(){
+          var jumpPad = new sjs.Image("Images/jump_pad.png");
+          level.push(jumpPad);
+          jumpPad.type = "jumpPad";
+          jumpPad.center().offset(-sjs.gx,10);
+          jumpPad.setHeight(15);
+          jumpPad.onMouseDown(function(){
+            jumpPad.draggable();
+            jumpPad.follow(sjs.mouse);
+          })
+        }
+    </script>
+  </head>
+  <body onload="start()">
+    <h1> Platform Game </h1>
+    <center>
+      <input type="image" src="Images/platform.png" onclick="platform()">
+      <input type="image" src="Images/power_up.png" onclick="powerup()">
+      <input type="image" src="Images/score.gif" onclick="score()">
+      <input type="image" src="Images/flag_bad.png" onclick="flag()">
+      <input type="image" src="Images/l_enemy.gif" onclick="enemy()">
+      <input type="image" src="Images/jump_pad.png" onclick="jumpPad()">
+    </center>
+
+    <div id="target" style="margin:auto;background:grey;"></div>
+
+    <br/>
+    <div id="output" style="margin:0 50 0 50;"></div>
+    <br/><br/>
+
+  </body>
+</html>
